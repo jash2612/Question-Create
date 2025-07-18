@@ -8,15 +8,27 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Use your project's required Node version
+          node-version: '20' # Use the Node.js version matching your project
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Prisma migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma migrate deploy
+
+      - name: Run database seeding
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run prisma:seed
+        continue-on-error: true # Optional: Skip seeding errors if not critical
 
       - name: Install Vercel CLI
         run: npm install -g vercel
@@ -26,5 +38,4 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          vercel --prod --token $VERCEL_TOKEN --org $VERCEL_ORG_ID --project $VERCEL_PROJECT_ID
+        run: vercel --prod --token $VERCEL_TOKEN
